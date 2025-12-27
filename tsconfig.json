@@ -1,0 +1,23 @@
+{
+    "compilerOptions": {
+      "target": "ES2022",
+      "module": "ESNext",
+      "moduleResolution": "Node",
+  
+      "strict": true,
+  
+      "outDir": "dist",
+      "rootDir": "src",
+  
+      "esModuleInterop": true,
+      "allowSyntheticDefaultImports": true,
+      "resolveJsonModule": true,
+  
+      "forceConsistentCasingInFileNames": true,
+      "skipLibCheck": true
+    },
+    "include": ["src", "src/test/vision.ts"],
+    "exclude": ["node_modules", "dist"]
+  }
+  
+
