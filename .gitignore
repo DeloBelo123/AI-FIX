@@ -3,5 +3,6 @@ dist/
 .env
 *.log
 faiss_rag/
+.DS_Store
 
 
