@@ -7,7 +7,6 @@
       "strict": true,
   
       "outDir": "dist",
-      "rootDir": "src",
   
       "esModuleInterop": true,
       "allowSyntheticDefaultImports": true,
@@ -16,8 +15,8 @@
       "forceConsistentCasingInFileNames": true,
       "skipLibCheck": true
     },
-    "include": ["src", "src/test/vision.ts"],
-    "exclude": ["node_modules", "dist"]
+    "include": ["src", "src/test/vision.ts", "tests/official-test.ts", "tests/stream-test.ts", "tests/memo-test.ts", "tests/agent-test.ts"],
+    "exclude": ["node_modules", "dist", "*.db", "*.sqlite", "sqlite-test"]
   }
   
 

@@ -12,7 +12,7 @@ import {
     VectorStore,
     BaseRetriever
 } from "./imports"
-import { supabase } from "./supabase"
+import { supabase } from "./supabase/server"
 import { getLLM } from "./helpers"
 
 interface SupabaseStoreConfig {

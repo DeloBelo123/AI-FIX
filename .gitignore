@@ -5,4 +5,10 @@ dist/
 faiss_rag/
 .DS_Store
 
+# SQLite Database Files
+*.db
+*.sqlite
+sqlite-test
+
+tests/
 

@@ -1,7 +1,10 @@
-import { BaseChatModel, BaseOutputParser, ChatGroq, ChatOllama, ChatOpenAI, ChatPromptTemplate, StructuredOutputParser } from "./imports";
+import { BaseChatModel, BaseOutputParser, ChatGroq, ChatOllama, ChatOpenAI, ChatPromptTemplate, StringOutputParser, StructuredOutputParser } from "./imports";
 import { z } from "zod/v3";
 
 export type LLMKind = "groq" | "localOllama" | "vision" 
+export type Prettify<T> = {
+  [K in keyof T]: T[K]
+} & {};
 
 export function getLLM(kind: LLMKind = "groq") {
   switch (kind) {
@@ -71,7 +74,7 @@ export async function structure<T extends z.ZodObject<any, any>>({
             {format_instructions}`],
         ["human", "{input}"]
     ]).partial({ format_instructions: jsonParser.getFormatInstructions() })
-    const chain = createChain(prompt, llm as any, jsonParser)
+    const chain = createChain(prompt, llm, jsonParser)
     let lastError: Error | null = null
     for (let i = 0; i <= retries; i++) {
         try {
@@ -85,4 +88,39 @@ export async function structure<T extends z.ZodObject<any, any>>({
         }
     }
     throw new Error(`structure() failed after ${retries + 1} attempts, Error: ${lastError?.message}`)
+}
+
+/**
+ * fasst eine Chat-Konversation zwischen User und Assistant zusammen
+ */
+export async function summarize({
+    conversation,
+    fokuss,
+    llm = getLLM("groq"),
+    maxWords = 150
+}: {
+    conversation: string,
+    fokuss?: string,
+    llm?: BaseChatModel,
+    maxWords?: number
+}): Promise<string> {
+    const focusMessage: Array<["system", string]> = fokuss 
+        ? [["system", `Fokussiere dich besonders auf die folgenden Themen:\n${fokuss}`]]
+        : []
+    
+    const prompt = ChatPromptTemplate.fromMessages([
+        ["system", `Du fasst eine Chat-Konversation zwischen User und Assistant zusammen.
+          WICHTIG:
+          - Behalte ALLE wichtigen Fakten: Namen, Präferenzen, Entscheidungen, Vereinbarungen
+          - Behalte chronologischen Kontext wo relevant für Verständnis
+          - Fasse auf max. ${maxWords} Wörter zusammen
+          - Format: Kurze, prägnante Zusammenfassung ohne Bullet-Points
+          - Ignoriere Small-Talk, fokussiere auf inhaltliche Punkte`],
+        ...focusMessage,
+        ["human", "{conversation}"]
+    ])
+    
+    const chain = createChain(prompt, llm, new StringOutputParser())
+    const result = await chain.invoke({ conversation })
+    return typeof result === "string" ? result : String(result)
 }

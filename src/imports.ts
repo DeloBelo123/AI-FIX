@@ -4,7 +4,7 @@ import { BaseOutputParser,StructuredOutputParser,StringOutputParser } from '@lan
 import { BaseChatModel } from '@langchain/core/language_models/chat_models'
 import { Document } from '@langchain/core/documents'
 import { BaseRetriever } from '@langchain/core/retrievers'
-import { Runnable } from '@langchain/core/runnables'
+import { Runnable, type RunnableConfig } from '@langchain/core/runnables'
 import { DynamicStructuredTool, tool } from '@langchain/core/tools'
 import { Embeddings } from '@langchain/core/embeddings'
 
@@ -33,6 +33,10 @@ import { RecursiveCharacterTextSplitter, CharacterTextSplitter } from '@langchai
 // Agents
 import { createReactAgent, ToolNode } from '@langchain/langgraph/prebuilt'
 import { MemorySaver, BaseCheckpointSaver } from '@langchain/langgraph'
+import { PostgresSaver } from '@langchain/langgraph-checkpoint-postgres'
+import { SqliteSaver } from '@langchain/langgraph-checkpoint-sqlite'
+import { type Checkpoint, type CheckpointMetadata, type LangGraphRunnableConfig } from "@langchain/langgraph"
+import type { CheckpointTuple, CheckpointListOptions, PendingWrite, ChannelVersions } from "@langchain/langgraph-checkpoint"
 
 import { z } from 'zod'
 import dotenv from 'dotenv'
@@ -97,6 +101,24 @@ export {
     ToolNode,
     MemorySaver,
     BaseCheckpointSaver,
+}
+
+// Checkpoint Savers (optional - Packages müssen installiert sein)
+export {
+    PostgresSaver,
+    SqliteSaver,
+}
+
+// Checkpoint
+export {
+    type Checkpoint,
+    type CheckpointMetadata,
+    type LangGraphRunnableConfig,
+    type RunnableConfig,
+    type CheckpointTuple,
+    type CheckpointListOptions,
+    type PendingWrite,
+    type ChannelVersions,
 }
 
 // Utils
