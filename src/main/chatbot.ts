@@ -14,7 +14,7 @@ type ChatBotProps = { memory?: BaseCheckpointSaver } & ({
 
 /**
  * CONSTRUCTOR: (Viele Defaults, kannst selber bestimmte dinge überschreiben)
- * @example this.memory = memory ?? new MemorySaver()
+ * @example this.memory = memory ?? new SmartCheckpointSaver(new MemorySaver())
         if ("chain" in rest){
             this.chain = rest.chain
         } else {
@@ -49,7 +49,7 @@ export class ChatBot {
         }
     }
 
-    public async chat({message, thread_id}: {message: string, thread_id: string}): Promise<string> {
+    public async *chat({message, thread_id}: {message: string, thread_id: string}): AsyncGenerator<string, string, unknown> {
         const config: LangGraphRunnableConfig = {
             configurable: { thread_id }
         }
@@ -75,39 +75,47 @@ export class ChatBot {
         }).join('\n\n')
 
         const chunks: string[] = []
-        for await (const chunk of this.chain.stream({ 
-            message: `${historyText}\n\nUser: ${message}` 
-        })) {
-            chunks.push(chunk)
-        }
-
-        const responseText = chunks.join('')
-
-        const aiMessage = new AIMessage(responseText)
-        const newMessages = [...allMessages, aiMessage]
         
-        const newCheckpoint: any = {
-            ...checkpoint,
-            channel_values: { 
-                ...(checkpoint?.channel_values || {}),
-                messages: newMessages 
-            },
-            channel_versions: checkpoint?.channel_versions || {},
-            versions_seen: checkpoint?.versions_seen || {},
-            v: (checkpoint?.v || 0) + 1,
-            id: checkpoint?.id || `${thread_id}-${Date.now()}`,
-            ts: checkpoint?.ts || new Date().toISOString()
+        try {
+            for await (const chunk of this.chain.stream({ 
+                message: `${historyText}\n\nUser: ${message}` 
+            })) {
+                chunks.push(chunk)
+                yield chunk
+            }
+        } finally {
+            // Memory-Speicherung wird IMMER ausgeführt, auch wenn der Stream fehlschlägt
+            const responseText = chunks.join('')
+
+            if (responseText.length > 0) {
+                const aiMessage = new AIMessage(responseText)
+                const newMessages = [...allMessages, aiMessage]
+                
+                const newCheckpoint = {
+                    ...checkpoint,
+                    channel_values: { 
+                        ...(checkpoint?.channel_values || {}),
+                        messages: newMessages 
+                    },
+                    channel_versions: checkpoint?.channel_versions || {},
+                    versions_seen: checkpoint?.versions_seen || {},
+                    v: (checkpoint?.v || 0) + 1,
+                    id: checkpoint?.id || `${thread_id}-${Date.now()}`,
+                    ts: checkpoint?.ts || new Date().toISOString()
+                }
+
+                const metadata: CheckpointMetadata = {
+                    source: "input",
+                    step: (checkpoint?.v || 0) + 1,
+                    parents: {}
+                }
+
+                await this.memory.put(config, newCheckpoint, metadata, {})
+            }
         }
+        
+        return chunks.join('')
 
-        const metadata: CheckpointMetadata = {
-            source: "input",
-            step: (checkpoint?.v || 0) + 1,
-            parents: {}
-        }
-
-        await this.memory.put(config, newCheckpoint, metadata, {})
-
-        return responseText
     }
 
     public async addContext(data: Array<any>){

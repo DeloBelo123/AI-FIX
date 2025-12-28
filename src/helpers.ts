@@ -6,6 +6,10 @@ export type Prettify<T> = {
   [K in keyof T]: T[K]
 } & {};
 
+export function logChunk(chunk: string) {
+  process.stdout.write(chunk)
+}
+
 export function getLLM(kind: LLMKind = "groq") {
   switch (kind) {
     case "groq":

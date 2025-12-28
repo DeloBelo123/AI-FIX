@@ -117,12 +117,10 @@ export class SupabaseCheckpointSaver extends BaseCheckpointSaver {
 }
 
 interface SmartCheckpointSaverOptions {
-    /** Anzahl Messages bevor Summarization startet (default: 10) */
     messagesBeforeSummary?: number
-    /** Maximale Anzahl Zusammenfassungen bevor älteste gelöscht wird (default: 7) */
     maxSummaries?: number
-    /** LLM für Summarization (optional) */
     summaryLLM?: BaseChatModel
+    debug?: boolean
 }
 
 export class SmartCheckpointSaver extends BaseCheckpointSaver {
@@ -130,16 +128,18 @@ export class SmartCheckpointSaver extends BaseCheckpointSaver {
     private messagesBeforeSummary: number
     private maxSummaries: number
     private summaryLLM: BaseChatModel
-    
+    private debug: boolean
+
     constructor(
         checkpointSaver: BaseCheckpointSaver,
         options: Prettify<SmartCheckpointSaverOptions> = {}
     ) {
         super()
         this.checkpointSaver = checkpointSaver
-        this.messagesBeforeSummary = options.messagesBeforeSummary ?? 10
+        this.messagesBeforeSummary = options.messagesBeforeSummary ?? 12
         this.maxSummaries = options.maxSummaries ?? 7
         this.summaryLLM = options.summaryLLM ?? getLLM("groq")
+        this.debug = options.debug ?? false
     }
     
     /**
@@ -238,7 +238,9 @@ export class SmartCheckpointSaver extends BaseCheckpointSaver {
             llm: this.summaryLLM,
             maxWords: 150
         })
-        console.log(`Summary erstellt beim SmartCheckpointSaver: ${summary}`)
+        if (this.debug) {
+            console.log(`Summary erstellt beim SmartCheckpointSaver: ${summary}`)
+        }
         
         // Erstelle neue System-Message mit Zusammenfassung
         const summarySystemMessage = new SystemMessage(
