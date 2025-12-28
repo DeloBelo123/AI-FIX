@@ -18,7 +18,7 @@ interface ChainProps<T extends z.ZodObject<any,any>>{
 }
 
 export const DEFAULT_SCHEMA = z.object({ 
-    output: z.string().describe("Die Antwort auf die Frage") 
+    output: z.string().describe("Dein Output zur anfrage des Users") 
 })
 
 /**
