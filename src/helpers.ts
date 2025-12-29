@@ -7,7 +7,25 @@ export type Prettify<T> = {
 } & {};
 
 export function logChunk(chunk: string) {
-  process.stdout.write(chunk)
+  const flushed = process.stdout.write(chunk)
+  if (!flushed) {
+    process.stdout.once('drain', () => {})
+  }
+}
+
+export function createChain(prompt: ChatPromptTemplate, llm: BaseChatModel, parser: BaseOutputParser | null = null) {
+  return parser ? prompt.pipe(llm).pipe(parser) : prompt.pipe(llm)
+}
+
+export async function wait(ms:number){
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+export async function *stream(y:string | Array<any>,wait_in_between:number = 1){
+  for (const x of y){
+    yield x
+    await wait(wait_in_between)
+  }
 }
 
 export function getLLM(kind: LLMKind = "groq") {
@@ -40,21 +58,6 @@ export function getLLM(kind: LLMKind = "groq") {
 
     default:
       throw new Error("Unknown LLM kind");
-  }
-}
-
-export function createChain(prompt: ChatPromptTemplate, llm: BaseChatModel, parser: BaseOutputParser | null = null) {
-    return parser ? prompt.pipe(llm).pipe(parser) : prompt.pipe(llm)
-}
-
-export async function wait(ms:number){
-  return new Promise(resolve => setTimeout(resolve, ms))
-}
-
-export async function *stream(y:string | Array<any>,wait_in_between:number = 1){
-  for (const x of y){
-    yield x
-    await wait(wait_in_between)
   }
 }
 
