@@ -3,7 +3,7 @@ import { BaseChatModel } from "../imports"
 import { SmartCheckpointSaver } from "../memory"
 import { Chain } from "./chain"
 import { MemorySaver } from "../imports"
-import { getLLM } from "../helpers"
+import { getLLM, wait } from "../helpers"
 
 type ChatBotProps = { memory?: BaseCheckpointSaver } & ({
     chain: Chain

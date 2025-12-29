@@ -47,13 +47,17 @@ export function createChain(prompt: ChatPromptTemplate, llm: BaseChatModel, pars
     return parser ? prompt.pipe(llm).pipe(parser) : prompt.pipe(llm)
 }
 
-/**
- * @example
- * const result = await structure({
- *     data: agentOutput,
- *     into: z.object({ name: z.string(), age: z.number() })
- * })
- */
+export async function wait(ms:number){
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+export async function *stream(y:string | Array<any>,wait_in_between:number = 1){
+  for (const x of y){
+    yield x
+    await wait(wait_in_between)
+  }
+}
+
 export async function structure<T extends z.ZodObject<any, any>>({
     data,
     into,

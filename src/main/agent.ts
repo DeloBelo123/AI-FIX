@@ -1,13 +1,14 @@
 import { z } from "zod/v3"
-import { DynamicStructuredTool } from "../imports"
+import { DynamicStructuredTool, Runnable } from "../imports"
 import { BaseChatModel } from "../imports"
 import { BaseCheckpointSaver } from "../imports"
 import { VectorStore } from "../imports"
 import { turn_to_docs } from "../rag"
-import { getLLM } from "../helpers"
+import { getLLM, wait } from "../helpers"
 import { createReactAgent } from "../imports"
-import { HumanMessage } from "../imports"
+import { HumanMessage, AIMessage, MemorySaver } from "../imports"
 import { structure } from "../helpers"
+import { SmartCheckpointSaver } from "../memory"
 
 interface AgentProps<T extends z.ZodObject<any,any>>{
     prompt?: Array<["system", string]>
@@ -29,7 +30,7 @@ interface AgentProps<T extends z.ZodObject<any,any>>{
         tools,
         llm = getLLM("groq"),
         schema,
-        memory
+        memory = new SmartCheckpointSaver(new MemorySaver())
     }: AgentProps<T>) {
         this.prompt = prompt
         this.tools = tools
@@ -59,7 +60,7 @@ export class Agent<T extends z.ZodObject<any,any>> {
         tools,
         llm = getLLM("groq"),
         schema,
-        memory
+        memory = new SmartCheckpointSaver(new MemorySaver())
     }: AgentProps<T>) {
         this.prompt = prompt
         this.tools = tools
@@ -107,7 +108,6 @@ export class Agent<T extends z.ZodObject<any,any>> {
     public async *stream(invokeInput: Record<string, any> & { input: string, thread_id?: string, debug?: boolean }): AsyncGenerator<string, void, unknown> {
         const { input, thread_id, debug, ...variables } = invokeInput
         
-        // Dynamische Variablen als System-Messages
         const contextMessages: Array<["system", string]> = Object.entries(variables).map(
             ([key, value]) => ["system", `${key}: ${typeof value === "object" ? JSON.stringify(value) : value}`]
         )
@@ -129,70 +129,55 @@ export class Agent<T extends z.ZodObject<any,any>> {
         
         const config = thread_id && this.memory ? { configurable: { thread_id } } : undefined
         
-        const stream = await this.agent.stream({ messages: [new HumanMessage(input)] }, config)
+        const response = await this.agent.invoke({ messages: [new HumanMessage(input)] }, config)
         
-        let lastContent = ""
+        // Finde die letzte AIMessage (nicht einfach die letzte Message, da es auch ToolMessages geben kann)
+        const messages = response.messages
+        let lastAIMessage = null
         
-        for await (const chunk of stream) {
-            // LangGraph gibt Events zurück: { "agent": { "messages": [...] }, "tools": {...}, etc. }
-            if(debug) console.log(`going through chunk ${JSON.stringify(chunk, null, 2)}`)
-            if (chunk && typeof chunk === 'object') {
-                // Prüfe verschiedene Event-Strukturen
-                let messages: any[] = []
-                
-                // Struktur 1: { "agent": { "messages": [...] } }
-                if ('agent' in chunk && chunk.agent && typeof chunk.agent === 'object' && 'messages' in chunk.agent) {
-                    messages = Array.isArray(chunk.agent.messages) ? chunk.agent.messages : []
-                }
-                // Struktur 2: { "messages": [...] } (direkt)
-                else if ('messages' in chunk && Array.isArray(chunk.messages)) {
-                    messages = chunk.messages
-                }
-                
-                // Verarbeite Messages - finde die letzte AI-Message
-                for (const msg of messages) {
-                    if (msg && typeof msg === 'object') {
-                        let content: any = null
-                        
-                        // Prüfe verschiedene Content-Strukturen
-                        // Struktur 1: { "kwargs": { "content": "..." } }
-                        if ('kwargs' in msg && msg.kwargs && typeof msg.kwargs === 'object' && 'content' in msg.kwargs) {
-                            content = msg.kwargs.content
-                        }
-                        // Struktur 2: { "content": "..." } (direkt)
-                        else if ('content' in msg) {
-                            content = msg.content
-                        }
-                        
-                        if (content) {
-                            let textContent = ""
-                            
-                            if (typeof content === 'string') {
-                                textContent = content
-                            } else if (Array.isArray(content)) {
-                                // Content kann ein Array sein (z.B. bei multimodal)
-                                textContent = content
-                                    .map((item: any) => {
-                                        if (typeof item === 'string') return item
-                                        if (item && typeof item === 'object' && 'text' in item) return item.text
-                                        return ""
-                                    })
-                                    .filter(Boolean)
-                                    .join("")
-                            }
-                            
-                            // Gib nur den neuen Teil zurück (Delta)
-                            if (textContent.length > lastContent.length) {
-                                const delta = textContent.slice(lastContent.length)
-                                if (delta) {
-                                    yield delta
-                                    lastContent = textContent
-                                }
-                            }
-                        }
-                    }
-                }
+        // Durchlaufe rückwärts, um die letzte AIMessage zu finden
+        for (let i = messages.length - 1; i >= 0; i--) {
+            const msg = messages[i]
+            // Prüfe ob es eine AIMessage ist (verschiedene Möglichkeiten)
+            if (msg instanceof AIMessage || 
+                msg._getType?.() === 'ai' || 
+                msg.constructor?.name === 'AIMessage' ||
+                (msg.id && msg.id.includes('AIMessage'))) {
+                lastAIMessage = msg
+                break
             }
+        }
+        
+        if (!lastAIMessage) {
+            // Fallback: Wenn keine AIMessage gefunden, nimm die letzte Message
+            lastAIMessage = messages[messages.length - 1]
+        }
+        
+        // Extrahiere Content (kann String oder Array sein)
+        let content = ''
+        if (typeof lastAIMessage.content === 'string') {
+            content = lastAIMessage.content
+        } else if (Array.isArray(lastAIMessage.content)) {
+            // Content kann ein Array von Content-Blöcken sein
+            content = lastAIMessage.content
+                .filter((block: any) => block.type === 'text' || typeof block === 'string')
+                .map((block: any) => typeof block === 'string' ? block : block.text || '')
+                .join(' ')
+        } else {
+            content = String(lastAIMessage.content || '')
+        }
+        
+        // Wenn Content leer ist, gib nichts zurück
+        if (!content || content.trim().length === 0) {
+            return
+        }
+        
+        // Teile den Content in Wörter auf
+        const words = content.split(" ")
+        
+        // Yield jedes Wort
+        for (const word of words) {
+            yield word + " "
         }
     }
 
