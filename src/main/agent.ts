@@ -109,7 +109,7 @@ export class Agent<T extends z.ZodObject<any,any>> {
     public async *stream(invokeInput: Record<string, any> & { input: string, thread_id?: string, debug?: boolean, stream_delay?: number }): AsyncGenerator<string, void, unknown> {
         this.should_use_schema = false
         try{
-            const { stream_delay = 1,...rest } = invokeInput
+            const { stream_delay = 1, ...rest } = invokeInput
             const response = await this.invoke(rest)
             const responseStr = typeof response === "string" ? response : JSON.stringify(response)
             const words = responseStr.split(" ")
