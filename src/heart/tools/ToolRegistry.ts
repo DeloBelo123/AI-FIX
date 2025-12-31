@@ -29,7 +29,7 @@ export class ToolRegistry {
         return tools[0]
     }
 
-    public getTools(names:string[]){
+    public getTools(...names:string[]){
         return names.map(name => this.getTool(name))
     }
 
@@ -89,3 +89,38 @@ export class ToolRegistry {
         return this.tools
     }
 }
+
+const toolRegistry = new ToolRegistry([
+    {
+        name:"get_weather",
+        description:"get the weather of a city",
+        schema:z.object({
+            city:z.string()
+        }),
+        func:async (city:string) => {
+            return `the weather of ${city} is sunny`
+        }
+    },
+    {
+        name:"get_news",
+        description:"get the news of a city",
+        schema:z.object({
+            city:z.string()
+        }),
+        func:async (city:string) => {
+            return `the news of ${city} is sunny`
+        }
+    },
+    {
+        name:"get_stock_price",
+        description:"get the stock price of a company",
+        schema:z.object({
+            company:z.string()
+        }),
+        func:async (company:string) => {
+            return `the stock price of ${company} is 100`
+        }
+    }
+])
+
+toolRegistry.getTools("get_weather","get_news","get_stock_price")

@@ -6,6 +6,16 @@ type ZodiosEndpointWithAlias<R> = ZodiosEndpointDescription<R> & {
     name?: string
 }
 
+export type ExtractToolNames<T extends readonly ZodiosEndpointWithAlias<any>[]> = {
+    [K in keyof T]: T[K] extends ZodiosEndpointWithAlias<any>
+        ? T[K]['name'] extends string
+            ? T[K]['name']
+            : T[K]['path'] extends string
+            ? `call api ${T[K]['method']} ${T[K]['path']}`
+            : never
+        : never
+}[number]
+
 export class ZodiosToolRegistry<T extends readonly ZodiosEndpointWithAlias<any>[]> {
     private apiSchemas: T
     private tools: DynamicStructuredTool[] 
@@ -16,7 +26,7 @@ export class ZodiosToolRegistry<T extends readonly ZodiosEndpointWithAlias<any>[
         this.tools = this.turnApiIntoTools()
     }
     
-    public getTool(name: string): DynamicStructuredTool | undefined {
+    public getTool(name: ExtractToolNames<T>): DynamicStructuredTool | undefined {
         const tools = this.tools.filter((tool) => tool.name?.toLowerCase() === name.toLowerCase())
         if (tools.length > 1){
             throw new Error(`Error! es wurden unter dem gleichen namen ${name} mehrere tools registriert!`)
@@ -29,7 +39,7 @@ export class ZodiosToolRegistry<T extends readonly ZodiosEndpointWithAlias<any>[
         return tool
     }
 
-    public getTools(names:string[]){
+    public getTools(...names: ExtractToolNames<T>[]): (DynamicStructuredTool | undefined)[] {
         return names.map(name => this.getTool(name))
     }
 
