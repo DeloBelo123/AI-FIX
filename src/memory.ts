@@ -119,27 +119,49 @@ export class SupabaseCheckpointSaver extends BaseCheckpointSaver {
 interface SmartCheckpointSaverOptions {
     messagesBeforeSummary?: number
     maxSummaries?: number
-    summaryLLM?: BaseChatModel
+    llm?: BaseChatModel
     debug?: boolean
 }
-
+/**
+ * @example CONSTRUCTOR:
+ * constructor(
+        checkpointSaver: BaseCheckpointSaver,
+        {
+            messagesBeforeSummary = 12,
+            maxSummaries = 7,
+            llm = getLLM("groq"),
+            debug = false
+        }: SmartCheckpointSaverOptions = {}
+    ) {
+        super()
+        this.checkpointSaver = checkpointSaver
+        this.messagesBeforeSummary = messagesBeforeSummary
+        this.maxSummaries = maxSummaries
+        this.llm = llm
+        this.debug = debug
+    }
+ */
 export class SmartCheckpointSaver extends BaseCheckpointSaver {
     private checkpointSaver: BaseCheckpointSaver
     private messagesBeforeSummary: number
     private maxSummaries: number
-    private summaryLLM: BaseChatModel
+    private llm: BaseChatModel
     private debug: boolean
 
     constructor(
-        checkpointSaver: BaseCheckpointSaver,
-        options: Prettify<SmartCheckpointSaverOptions> = {}
+        checkpointSaver: BaseCheckpointSaver,{
+            messagesBeforeSummary = 12,
+            maxSummaries = 7,
+            llm = getLLM("groq"),
+            debug = false
+        }: SmartCheckpointSaverOptions = {}
     ) {
         super()
         this.checkpointSaver = checkpointSaver
-        this.messagesBeforeSummary = options.messagesBeforeSummary ?? 12
-        this.maxSummaries = options.maxSummaries ?? 7
-        this.summaryLLM = options.summaryLLM ?? getLLM("groq")
-        this.debug = options.debug ?? false
+        this.messagesBeforeSummary = messagesBeforeSummary
+        this.maxSummaries = maxSummaries
+        this.llm = llm
+        this.debug = debug
     }
     
     /**
@@ -235,7 +257,7 @@ export class SmartCheckpointSaver extends BaseCheckpointSaver {
         const conversationText = this.messagesToText(messagesToSummarize)
         const summary = await summarize({
             conversation: conversationText,
-            llm: this.summaryLLM,
+            llm: this.llm,
             maxWords: 150
         })
         if (this.debug) {

@@ -97,7 +97,10 @@ export class ChatBot {
                         ...(checkpoint?.channel_values || {}),
                         messages: newMessages 
                     },
-                    channel_versions: checkpoint?.channel_versions || {},
+                    channel_versions: {
+                        ...(checkpoint?.channel_versions || {}),
+                        messages: newMessages.length
+                    },
                     versions_seen: checkpoint?.versions_seen || {},
                     v: (checkpoint?.v || 0) + 1,
                     id: checkpoint?.id || `${thread_id}-${Date.now()}`,
@@ -110,7 +113,7 @@ export class ChatBot {
                     parents: {}
                 }
 
-                await this.memory.put(config, newCheckpoint, metadata, {})
+                await this.memory.put(config, newCheckpoint, metadata, { messages: newMessages.length })
             }
         }
         

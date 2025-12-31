@@ -16,7 +16,7 @@ import { supabase } from "./supabase/server"
 import { getLLM } from "./helpers"
 
 interface SupabaseStoreConfig {
-    docs: Document<Record<string,any>>[]
+    data: string[]
     table_name?: string
     RPC_function?: string
 }
@@ -37,7 +37,8 @@ export function turn_to_docs<T>(docs: T[]): Document<Record<string,any>>[] {
     }))
 }
 
-export async function createSupabaseVectoreStore({docs, table_name = "documents", RPC_function = "match_documents"}: SupabaseStoreConfig) {
+export async function createSupabaseVectoreStore({data, table_name = "documents", RPC_function = "match_documents"}: SupabaseStoreConfig) {
+    const docs = turn_to_docs(data)
     const splitted_docs = await baseSplitter.splitDocuments(docs)
     return await SupabaseVectorStore.fromDocuments(  
         splitted_docs,
@@ -60,7 +61,8 @@ export function getSupabaseVectorStore({table_name = "documents", RPC_function =
     })
 }
 
-export async function createFaissStore({docs, save_path, embeddings = baseEmbeddings}: {docs: Document<Record<string,any>>[], save_path?: string, embeddings?: Embeddings}) {
+export async function createFaissStore({data, save_path = "faiss_rag", embeddings = baseEmbeddings}: {data: string[], save_path?: string, embeddings?: Embeddings}) {
+    const docs = turn_to_docs(data)
     const splitted_docs = await baseSplitter.splitDocuments(docs)
     const vectore_store = await FaissStore.fromDocuments(
         splitted_docs,
@@ -72,14 +74,10 @@ export async function createFaissStore({docs, save_path, embeddings = baseEmbedd
     return vectore_store
 }
 
-// Gespeicherten FAISS Store von Disk laden
 export async function loadFaissStore({path, embeddings = baseEmbeddings}: {path: string, embeddings?: Embeddings}) {
     return await FaissStore.load(path, embeddings)
 }
 
-// ============ RETRIEVAL CHAINS ============
-
-// Erstellt eine Retrieval Chain aus einem VectorStore
 export async function createRAGChain({
     vectorStore,
     llm,

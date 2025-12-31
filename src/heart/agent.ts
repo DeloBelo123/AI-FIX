@@ -103,7 +103,7 @@ export class Agent<T extends z.ZodObject<any,any>> {
         if (this.schema && this.should_use_schema) {
             return await structure({ data: content, into: this.schema, llm: this.llm }) as any
         }
-        return content as any
+        return content 
     }
 
     public async *stream(invokeInput: Record<string, any> & { input: string, thread_id?: string, debug?: boolean, stream_delay?: number }): AsyncGenerator<string, void, unknown> {
@@ -154,15 +154,19 @@ export class Agent<T extends z.ZodObject<any,any>> {
         console.log("Context cleared")
     }
 
+    public hasContext(): boolean {
+        return this.vectorStore !== undefined && this.rag_tool !== undefined
+    }
+
+    public addTool(tool:DynamicStructuredTool){
+        this.tools.push(tool)
+    }
+
     public get currentTools(): string[] {
         const tools = [...this.tools]
         if (this.rag_tool) {
             tools.push(this.rag_tool)
         }
         return tools.map(tool => tool.name)
-    }
-    
-    public hasContext(): boolean {
-        return this.vectorStore !== undefined && this.rag_tool !== undefined
     }
 }
