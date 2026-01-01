@@ -4,11 +4,12 @@ import { BaseChatModel } from "../imports"
 import { BaseCheckpointSaver } from "../imports"
 import { VectorStore } from "../imports"
 import { turn_to_docs } from "../rag"
-import { getLLM, wait } from "../helpers"
+import { getLLM, logChunk, wait } from "../helpers"
 import { createReactAgent } from "../imports"
 import { HumanMessage, AIMessage, MemorySaver } from "../imports"
 import { structure,stream } from "../helpers"
 import { SmartCheckpointSaver } from "../memory"
+import { input } from "../cli"
 
 interface AgentProps<T extends z.ZodObject<any,any>>{
     prompt?: Array<["system", string]>
@@ -118,6 +119,40 @@ export class Agent<T extends z.ZodObject<any,any>> {
             }
         } finally {
             this.should_use_schema = true
+        }
+    }
+
+    public async session({
+        breakword = "exit",
+        numberOfMessages = Number.POSITIVE_INFINITY,
+        id = this.memory ? `${Date.now()}` : undefined
+    }:{
+        breakword?:string,
+        numberOfMessages?:number,
+        id?:string
+    } = {}){
+        let messages = 0
+        while(true){
+            try{
+                const message = await input("You: ")
+                if(message === breakword){
+                    break
+                }
+                const response = this.stream({
+                    input: message, 
+                    thread_id: id,
+                })
+                console.log("Assistant: ")
+                for await (const chunk of response) {
+                    logChunk(chunk)
+                }
+            } catch(e){
+                console.error("Error: ", e)
+            }
+            messages = messages + 2
+            if(messages > numberOfMessages){
+                break
+            }
         }
     }
 
