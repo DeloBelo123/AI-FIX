@@ -17,11 +17,11 @@ export type ExtractToolNames<T extends readonly ZodiosEndpointWithAlias<any>[]> 
 }[number]
 
 export class ZodiosToolRegistry<T extends readonly ZodiosEndpointWithAlias<any>[]> {
-    private apiSchemas: T
+    private apiSchema: T
     private tools: DynamicStructuredTool[] 
     private zodiosClient: Zodios<T>
-    constructor({apiSchemas, zodiosClient}: {apiSchemas: T, zodiosClient: Zodios<T>}){
-        this.apiSchemas = apiSchemas
+    constructor({apiSchema, zodiosClient}: {apiSchema: T, zodiosClient: Zodios<T>}){
+        this.apiSchema = apiSchema
         this.zodiosClient = zodiosClient
         this.tools = this.turnApiIntoTools()
     }
@@ -48,7 +48,7 @@ export class ZodiosToolRegistry<T extends readonly ZodiosEndpointWithAlias<any>[
     }
 
     private turnApiIntoTools():DynamicStructuredTool[]{
-        return this.apiSchemas.map((endpoint)=>{
+        return this.apiSchema.map((endpoint)=>{
             return new DynamicStructuredTool({
                 name:endpoint.name || `call api ${endpoint.method} ${endpoint.path}`,
                 description: endpoint.description|| `calls the api ${endpoint.method} ${endpoint.path}`,
