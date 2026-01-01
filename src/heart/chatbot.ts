@@ -3,7 +3,8 @@ import { BaseChatModel } from "../imports"
 import { SmartCheckpointSaver } from "../memory"
 import { Chain } from "./chain"
 import { MemorySaver } from "../imports"
-import { getLLM, wait } from "../helpers"
+import { getLLM, logChunk } from "../helpers"
+import { input } from "../cli"
 
 type ChatBotProps = { memory?: BaseCheckpointSaver } & ({
     chain: Chain
@@ -119,6 +120,40 @@ export class ChatBot {
         
         return chunks.join('')
 
+    }
+
+    public async session({
+        breakword = "exit",
+        numberOfMessages = Number.POSITIVE_INFINITY,
+        id = `${Date.now()}`
+    }:{
+        breakword?:string,
+        numberOfMessages?:number,
+        id?:string
+    } = {}){
+        let messages = 0
+        while(true){
+            try{
+                const message = await input("You: ")
+                if(message === breakword){
+                    break
+                }
+                const response = this.chat({
+                    message: message, 
+                    thread_id: id,
+                })
+                console.log("Assistant: ")
+                for await (const chunk of response) {
+                    logChunk(chunk)
+                }
+            } catch(e){
+                console.error("Error: ", e)
+            }
+            messages = messages + 2
+            if(messages > numberOfMessages){
+                break
+            }
+        }
     }
 
     public async addContext(data: Array<any>){

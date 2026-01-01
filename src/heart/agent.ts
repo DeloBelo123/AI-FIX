@@ -30,7 +30,7 @@ interface AgentProps<T extends z.ZodObject<any,any>>{
         tools,
         llm = getLLM("groq"),
         schema,
-        memory = new SmartCheckpointSaver(new MemorySaver())
+        memory
     }: AgentProps<T>) {
         this.prompt = prompt
         this.tools = tools
@@ -61,7 +61,7 @@ export class Agent<T extends z.ZodObject<any,any>> {
         tools,
         llm = getLLM("groq"),
         schema,
-        memory = new SmartCheckpointSaver(new MemorySaver())
+        memory
     }: AgentProps<T>) {
         this.prompt = prompt
         this.tools = tools
