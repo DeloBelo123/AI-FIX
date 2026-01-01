@@ -3,6 +3,7 @@ dist/
 .env
 *.log
 faiss_rag/
+faiss_rag_test_bro/
 .DS_Store
 
 # SQLite Database Files
