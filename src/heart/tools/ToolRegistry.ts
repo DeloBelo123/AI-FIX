@@ -8,16 +8,20 @@ interface Tool {
     func:(...args:any[]) => any
 }
 
-export class ToolRegistry {
+type ExtractToolNames<T extends Tool[]> = {
+    [K in keyof T]: T[K] extends Tool ? T[K]['name'] : never
+}[number]
+
+export class ToolRegistry<T extends Tool[]> {
     private tools:DynamicStructuredTool[]
-    constructor(tools:Array<Tool | DynamicStructuredTool>){
+    constructor(tools:T){
         this.tools = tools.map(tool => tool instanceof DynamicStructuredTool ? tool : this.turnToTool(tool))
         if (this.checkDuplicatedTools()){
             throw new Error(`Error! mehrere tools wurden unter den gleichen Namen registriert!`)
         }
     }
 
-    public getTool(name:string): DynamicStructuredTool | undefined{
+    public getTool(name:ExtractToolNames<T>): DynamicStructuredTool | undefined{
         const tools = this.tools.filter(tool => tool.name.toLowerCase() === name.toLowerCase())
         if (tools.length > 1) {
             throw new Error(`Error! mehrere tools wurden unter den gleichen Namen ${name} registriert!`)
@@ -29,43 +33,8 @@ export class ToolRegistry {
         return tools[0]
     }
 
-    public getTools(...names:string[]){
+    public getTools(...names:ExtractToolNames<T>[]){
         return names.map(name => this.getTool(name))
-    }
-
-    public addTool(tool:DynamicStructuredTool | Tool){
-        for(let i = 0; i < this.tools.length; i++){
-            if(this.tools[i].name === tool.name){
-                throw new Error(`Error! tool ${tool.name} wurde bereits registriert!`)
-            }
-        }
-        if (tool instanceof DynamicStructuredTool){
-            this.tools.push(tool)
-        } else {
-            this.tools.push(new DynamicStructuredTool({
-                name:tool.name,
-                description:tool.description,
-                schema:tool.schema,
-                func:tool.func
-            }))
-        }
-    }
-
-    public deleteTool(name:string){
-        for(let i = 0; i < this.tools.length; i++){
-            if(this.tools[i].name === name){
-                const name_to_make_sure = this.tools.splice(i,1)
-                console.log(`actualy deleted ${name_to_make_sure}. for reference, this tool was given by the param:${name}`)
-            }
-        }
-    }
-
-    public updateTool(name:string,tool:DynamicStructuredTool){
-        if(name !== tool.name){
-            throw new Error(`man, was labberst du da? wie willst du ${name} updaten wenn du ${tool.name} als tool eingibst? die haben nicht den gleichen Namen!!!`)
-        }
-        this.deleteTool(name)
-        this.addTool(tool)
     }
 
     private turnToTool(tool:Tool):DynamicStructuredTool{
@@ -121,6 +90,6 @@ const toolRegistry = new ToolRegistry([
             return `the stock price of ${company} is 100`
         }
     }
-])
+] as const)
 
-toolRegistry.getTools("get_weather","get_news","get_stock_price")
+toolRegistry.getTools()
