@@ -15,7 +15,8 @@ type ChatBotProps = { memory?: BaseCheckpointSaver } & ({
 
 /**
  * CONSTRUCTOR: (Viele Defaults, kannst selber bestimmte dinge überschreiben)
- * @example this.memory = memory ?? new SmartCheckpointSaver(new MemorySaver())
+ * @example constructor({memory, ...rest}: ChatBotProps = {}){
+        this.memory = memory ?? new SmartCheckpointSaver(new MemorySaver())
         if ("chain" in rest){
             this.chain = rest.chain
         } else {
@@ -24,6 +25,7 @@ type ChatBotProps = { memory?: BaseCheckpointSaver } & ({
                 prompt: rest.prompt ?? [["system", "Du bist ein hilfreicher Chatbot der mit dem User ein höffliches und hilfreiches Gespräch führt"]]
             })
         }
+    }
  * 
  * @example entweder gibst du direkt eine chain mit memory:
  * @param props.memory 
