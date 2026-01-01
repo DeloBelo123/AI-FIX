@@ -1,32 +1,27 @@
-import type { Zodios, ZodiosEndpointDescription } from "zodios"
+import type { Zodios, ZodiosEndpointDescription, ApiOf } from "zodios"
 import { DynamicStructuredTool } from "../../imports"
 import { z, type ZodTypeAny } from 'zod/v3'
+import { Prettify } from "../../helpers"
+import type { ExtractToolNames } from "./CombinedRegistry"
 
-type ZodiosEndpointWithAlias<R> = ZodiosEndpointDescription<R> & {
+export type ZodiosEndpointWithAlias<R> = Prettify<ZodiosEndpointDescription<R> & {
     name?: string
-}
+}>
 
-export type ExtractToolNames<T extends readonly ZodiosEndpointWithAlias<any>[]> = {
-    [K in keyof T]: T[K] extends ZodiosEndpointWithAlias<any>
-        ? T[K]['name'] extends string
-            ? T[K]['name']
-            : T[K]['path'] extends string
-            ? `call api ${T[K]['method']} ${T[K]['path']}`
-            : never
-        : never
-}[number]
-
-export class ZodiosToolRegistry<T extends readonly ZodiosEndpointWithAlias<any>[]> {
-    private apiSchema: T
+/**
+ * vergiss nicht 'as const' am ende des api-schemas zu verwenden für perekten autocomplete!!!
+ */
+export class ZodiosToolRegistry<Z extends Zodios<any>> {
+    private apiSchema: ApiOf<Z>
     private tools: DynamicStructuredTool[] 
-    private zodiosClient: Zodios<T>
-    constructor({apiSchema, zodiosClient}: {apiSchema: T, zodiosClient: Zodios<T>}){
-        this.apiSchema = apiSchema
+    private zodiosClient: Z
+    constructor(zodiosClient: Z){
         this.zodiosClient = zodiosClient
+        this.apiSchema = (zodiosClient as any).api as ApiOf<Z>
         this.tools = this.turnApiIntoTools()
     }
     
-    public getTool(name: ExtractToolNames<T>): DynamicStructuredTool | undefined {
+    public getTool(name: ExtractToolNames<ApiOf<Z>>): DynamicStructuredTool | undefined {
         const tools = this.tools.filter((tool) => tool.name?.toLowerCase() === name.toLowerCase())
         if (tools.length > 1){
             throw new Error(`Error! es wurden unter dem gleichen namen ${name} mehrere tools registriert!`)
@@ -39,7 +34,7 @@ export class ZodiosToolRegistry<T extends readonly ZodiosEndpointWithAlias<any>[
         return tool
     }
 
-    public getTools(...names: ExtractToolNames<T>[]): (DynamicStructuredTool | undefined)[] {
+    public getTools(...names: ExtractToolNames<ApiOf<Z>>[]): (DynamicStructuredTool | undefined)[] {
         return names.map(name => this.getTool(name))
     }
 
@@ -48,7 +43,7 @@ export class ZodiosToolRegistry<T extends readonly ZodiosEndpointWithAlias<any>[
     }
 
     private turnApiIntoTools():DynamicStructuredTool[]{
-        return this.apiSchema.map((endpoint)=>{
+        return this.apiSchema.map((endpoint: ZodiosEndpointDescription<any> & { name?: string })=>{
             return new DynamicStructuredTool({
                 name:endpoint.name || `call api ${endpoint.method} ${endpoint.path}`,
                 description: endpoint.description|| `calls the api ${endpoint.method} ${endpoint.path}`,

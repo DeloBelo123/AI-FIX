@@ -2,6 +2,7 @@ import { BaseChatModel, BaseOutputParser, ChatGroq, ChatOllama, ChatOpenAI, Chat
 import { z } from "zod/v3";
 
 export type LLMKind = "groq" | "localOllama" | "vision" 
+
 export type Prettify<T> = {
   [K in keyof T]: T[K]
 } & {};
