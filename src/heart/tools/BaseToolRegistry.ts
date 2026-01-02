@@ -15,7 +15,7 @@ export interface Tool {
 export class ToolRegistry<T extends Tool[]> {
     private tools:DynamicStructuredTool[]
     constructor(tools:T){
-        this.tools = tools.map(tool => tool instanceof DynamicStructuredTool ? tool : this.turnToTool(tool))
+        this.tools = tools.map(tool => tool instanceof DynamicStructuredTool ? tool : this.turnToTool(tool)) 
         if (this.checkDuplicatedTools()){
             throw new Error(`Error! mehrere tools wurden unter den gleichen Namen registriert!`)
         }
@@ -58,6 +58,7 @@ export class ToolRegistry<T extends Tool[]> {
         return this.tools
     }
 }
+
 
 
 

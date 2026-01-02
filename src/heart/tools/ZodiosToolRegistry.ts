@@ -8,9 +8,6 @@ export type ZodiosEndpointWithAlias<R> = Prettify<ZodiosEndpointDescription<R> &
     name?: string
 }>
 
-/**
- * vergiss nicht 'as const' am ende des api-schemas zu verwenden für perekten autocomplete!!!
- */
 export class ZodiosToolRegistry<Z extends Zodios<any>> {
     private apiSchema: ApiOf<Z>
     private tools: DynamicStructuredTool[] 
