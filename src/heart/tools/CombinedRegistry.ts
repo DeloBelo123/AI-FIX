@@ -24,7 +24,7 @@ type ExtractToolNamesFromZodiosApi<Api extends readonly any[]> = {
 type ExtractToolNamesFromInput<T extends readonly (Tool | Zodios<any>)[]> = {
     [K in keyof T]: T[K] extends Tool
         ? T[K]['name']
-        : T[K] extends Zodios<infer ZApi>
+        : T[K] extends Zodios<infer Api>
         ? ExtractToolNamesFromZodiosApi<ApiOf<T[K]>>
         : never
 }[number]
