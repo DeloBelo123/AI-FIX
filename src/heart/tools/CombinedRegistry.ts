@@ -1,4 +1,4 @@
-import { ToolRegistry, type Tool } from "./BaseToolRegistry"
+import { ToolRegistry, type Tool } from "./BasicToolRegistry"
 import { ZodiosToolRegistry } from "./ZodiosToolRegistry"
 import { ZodiosEndpointWithAlias } from "./ZodiosToolRegistry"
 import type { DynamicStructuredTool } from "@langchain/core/tools"
@@ -35,7 +35,7 @@ type ExtractToolNamesFromInput<T extends readonly (Tool | Zodios<any>)[]> = {
 export class CombinedToolRegistry<T extends readonly (Tool | Zodios<any>)[]> {
     private BaseToolRegistry:ToolRegistry<Tool[]> | undefined
     private ZodiosToolRegistry:ZodiosToolRegistry<Zodios<any>> | undefined
-    private allTools:DynamicStructuredTool[]
+    private tools:DynamicStructuredTool[]
 
     constructor(input: T){
         //getting and checking the tools
@@ -59,19 +59,19 @@ export class CombinedToolRegistry<T extends readonly (Tool | Zodios<any>)[]> {
         }
 
         //combining the tools
-        this.allTools = [...(this.BaseToolRegistry?.Tools || []), ...(this.ZodiosToolRegistry?.Tools || [])]
+        this.tools = [...(this.BaseToolRegistry?.allTools || []), ...(this.ZodiosToolRegistry?.allTools || [])]
     }
 
     getTool(name: ExtractToolNamesFromInput<T>): DynamicStructuredTool | undefined {
-        return this.allTools.find((tool) => tool.name === name)
+        return this.tools.find((tool) => tool.name === name)
     }
 
     getTools(...names: ExtractToolNamesFromInput<T>[]): DynamicStructuredTool[] {
         return names.map((name) => this.getTool(name)).filter((tool): tool is DynamicStructuredTool => tool !== undefined)
     }
 
-    get Tools(): DynamicStructuredTool[] {
-        return this.allTools
+    get allTools(): DynamicStructuredTool[] {
+        return this.tools
     }
 }
 

@@ -35,7 +35,7 @@ export class ZodiosToolRegistry<Z extends Zodios<any>> {
         return names.map(name => this.getTool(name))
     }
 
-    get Tools(): DynamicStructuredTool[] {
+    get allTools(): DynamicStructuredTool[] {
         return this.tools
     }
 

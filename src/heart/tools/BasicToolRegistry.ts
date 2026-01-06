@@ -54,7 +54,7 @@ export class ToolRegistry<T extends Tool[]> {
         return dublikaes.length > 0 ? true : false
     }
 
-    public get Tools():DynamicStructuredTool[]{
+    public get allTools():DynamicStructuredTool[]{
         return this.tools
     }
 }
