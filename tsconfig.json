@@ -15,7 +15,7 @@
       "forceConsistentCasingInFileNames": true,
       "skipLibCheck": true
     },
-    "include": ["src", "src/test/vision.ts", "tests/official-test.ts", "tests/stream-test.ts", "tests/memo-test.ts", "tests/agent-test.ts"],
+    "include": ["src", "tests"],
     "exclude": ["node_modules", "dist", "*.db", "*.sqlite", "sqlite-test"]
   }
   

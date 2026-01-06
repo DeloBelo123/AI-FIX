@@ -11,6 +11,9 @@ export function logChunk(chunk: string) {
   const flushed = process.stdout.write(chunk)
   if (!flushed) {
     process.stdout.once('drain', () => {})
+  } else {
+    // Explizit flushen, damit Output sofort sichtbar ist
+    process.stdout.write('', () => {})
   }
 }
 
@@ -22,9 +25,9 @@ export async function wait(ms:number){
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-export async function *stream(y:string | Array<any>,wait_in_between:number = 1){
-  for (const x of y){
-    yield x
+export async function *stream(text:string | Array<any>,wait_in_between:number = 100){
+  for (const chunk of text){
+    yield chunk + " "
     await wait(wait_in_between)
   }
 }

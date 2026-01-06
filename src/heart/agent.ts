@@ -122,40 +122,6 @@ export class Agent<T extends z.ZodObject<any,any>> {
         }
     }
 
-    public async session({
-        breakword = "exit",
-        numberOfMessages = Number.POSITIVE_INFINITY,
-        id = this.memory ? `${Date.now()}` : undefined
-    }:{
-        breakword?:string,
-        numberOfMessages?:number,
-        id?:string
-    } = {}){
-        let messages = 0
-        while(true){
-            try{
-                const message = await input("You: ")
-                if(message === breakword){
-                    break
-                }
-                const response = this.stream({
-                    input: message, 
-                    thread_id: id,
-                })
-                console.log("Assistant: ")
-                for await (const chunk of response) {
-                    logChunk(chunk)
-                }
-            } catch(e){
-                console.error("Error: ", e)
-            }
-            messages = messages + 2
-            if(messages > numberOfMessages){
-                break
-            }
-        }
-    }
-
     public setContext(vectorStore: VectorStore, metadata: { name?: string, description?: string } = {}) {
         this.vectorStore = vectorStore
         this.rag_tool = new DynamicStructuredTool({
